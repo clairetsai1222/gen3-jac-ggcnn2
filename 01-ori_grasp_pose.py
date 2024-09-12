@@ -1,7 +1,7 @@
 '''
 For learing purpose, I create 4 versions of the code for different progress completion.
 
-Version 01: Using the grasp-cnn net model to predict the grasp point in the camera frame.
+Level 01: Using the grasp-cnn net model to predict a grasp point in the camera frame.(reguardless any predicted object)
 
 execuion summary:
 - Get the camera intrinsics and depth scale from the camera.
@@ -23,28 +23,9 @@ import datetime
 
 from models.ggcnn import GGCNN
 from models.ggcnn2 import GGCNN2
-from ggcnn_torch import predict, process_depth_image
 
 from utils.dataset_processing import grasp, grocess_output
 
-
-# 将相机坐标转换为机械臂坐标系
-def camera_to_robot_frame(camera_point, T_cam2gripper, intrinsics, depth_scale):
-    # 相机坐标系下的点
-    u, v, depth = camera_point
-
-    # 反投影到相机坐标系
-    Z = depth * depth_scale
-    X = (u - intrinsics.ppx) * Z / intrinsics.fx
-    Y = (v - intrinsics.ppy) * Z / intrinsics.fy
-
-    # 相机坐标系下的点
-    point_camera = np.array([X, Y, Z, 1])
-
-    # 转换到机械臂坐标系
-    point_robot = np.dot(T_cam2gripper, point_camera)
-
-    return point_robot[:3]
 
 
 # 获取我相机内参, 如果更换相机，需要重新获取内参，realsense d435i相机的获取方式在gen3_utils/d435i_intrinsics.py中
@@ -67,8 +48,6 @@ def get_camera_intrinsics():
     depth_scale = 999.999952502551
     
     return depth_intrinsic_matrix, color_intrinsic_matrix, depth_scale
-
-# 主函数
 
 # 加载相机内参
 depth_intrinsic_matrix, color_intrinsic_matrix, depth_scale = get_camera_intrinsics()

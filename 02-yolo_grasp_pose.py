@@ -1,130 +1,135 @@
 '''
+For learning purpose, I create 4 versions of the code for different progress completion.
 
+Level 02: Utilize yolo model to predict grasped object and get the chosen item's grasp pose.
+
+execution summary:
+1. Load the yolo model and the ggcnn model.
+2. Configure the realsense camera.
+3. Start the realsense camera and get the depth and color images.
+4. Preprocess the depth image with yolo outcome and use ggcnn model to predict the grasped object.
 '''
 
 import pyrealsense2 as rs
 import numpy as np
 import cv2
-from gen3_utils import object_yolo, extrinsics_calibration
+import torch
+import datetime
 
-# 将相机坐标转换为机械臂坐标系
-def camera_to_robot_frame(camera_point, T_cam2gripper, intrinsics, depth_scale):
-    # 相机坐标系下的点
-    u, v, depth = camera_point
-
-    # 反投影到相机坐标系
-    Z = depth * depth_scale
-    X = (u - intrinsics.ppx) * Z / intrinsics.fx
-    Y = (v - intrinsics.ppy) * Z / intrinsics.fy
-
-    # 相机坐标系下的点
-    point_camera = np.array([X, Y, Z, 1])
-
-    # 转换到机械臂坐标系
-    point_robot = np.dot(T_cam2gripper, point_camera)
-
-    return point_robot[:3]
-
-# 假设你有一个控制Kinova Gen3机械臂的函数
-def control_kinova(grasp_point):
-    # 控制机械臂移动到抓取点
-    pass
+from models.ggcnn2 import GGCNN2
+from utils.calibrate import align_depth_color
+from utils.dataset_processing import grasp, grocess_output, grasp_pose_examples_utils
+from utils.calibrate import statical_camera_info
+from utils.yolo import object_detection
 
 
-# 获取我相机内参, 如果更换相机，需要重新获取内参，realsense d435i相机的获取方式在gen3_utils/d435i_intrinsics.py中
-def get_camera_intrinsics():
-    # 深度相机的内参矩阵
-    depth_intrinsic_matrix = np.array([
-        [427.52703857,   0.          , 426.38412476],
-        [  0.          , 427.52703857, 237.69470215],
-        [  0.          ,   0.        ,   1.        ]
-    ])
-    
-    # 颜色相机的内参矩阵
-    color_intrinsic_matrix = np.array([
-        [910.4362793 ,   0.        , 647.40075684],
-        [  0.        , 910.06066895, 364.79605103],
-        [  0.        ,   0.        ,   1.        ]
-    ])
-    
-    # 深度比例因子
-    depth_scale = 999.999952502551
-    
-    return depth_intrinsic_matrix, color_intrinsic_matrix, depth_scale
-
-    
-
-# 进行手眼标定
-def load_calibrate_hand_eye():
+# 导入YOLO模型相关的库
+from ultralytics import YOLO
 
 
-# 从bounding box中求取抓取点
-def load_bbox_grasp_point(depth_image, bbox):
-    
+# 加载相机内参
+depth_intrinsic_matrix, color_intrinsic_matrix, depth_scale = statical_camera_info.get_camera_intrinsics()
 
-# 控制机械臂
-def control_kinova(grasp_point):
-    # 控制机械臂移动到抓取点
-    pass
+# 创建RealSense管道
+pipeline = rs.pipeline()
+config = rs.config()
+config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
 
-# 主函数
-def __main__():
-    # 配置Realsense管道
-    pipeline = rs.pipeline()
-    config = rs.config()
-    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
-    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-    pipeline.start(config)
+# 启动管道
+pipeline.start(config)
 
-    # 获取相机内参
-    intrinsics, depth_scale = get_camera_intrinsics()
+# 加载GGCNN模型
+ggcnn_model = GGCNN2()
+ggcnn_model.load_state_dict(torch.load('./ggcnn2_weights_jacquard/epoch_100_iou_97_statedict.pt'))
 
-    # 进行手眼标定
-    R_gripper2base = []
-    t_gripper2base = []
-    R_target2cam = []
-    t_target2cam = []
-    T_cam2gripper = load_calibrate_hand_eye
+expecting_detected_object = input("Please input the label of the object you want to detect: ")
 
-    try:
-        while True:
-            # 等待下一帧
-            frames = pipeline.wait_for_frames()
-            depth_frame = frames.get_depth_frame()
-            color_frame = frames.get_color_frame()
-            if not depth_frame or not color_frame:
-                continue
+stop_flag = True
+try:
+    while stop_flag:
+        # 等待下一帧
+        frames = pipeline.wait_for_frames()  
+        depth_frame = frames.get_depth_frame()
+        color_frame = frames.get_color_frame()
 
-            # 将图像转换为numpy数组
-            depth_image = np.asanyarray(depth_frame.get_data())
-            color_image = np.asanyarray(color_frame.get_data())
+        if not depth_frame or not color_frame:
+            continue
 
-            # 进行物体检测
-            object_name = 'your_object_name'  # 指定物体名称
+        depth_image = np.asanyarray(depth_frame.get_data())
+        color_image = np.asanyarray(color_frame.get_data())
 
-            # 从bounding box中求取抓取点
-            grasp_point = get_grasp_point(depth_image, bbox)
+        # 调整深度图像和彩色图像尺寸为704x1280
+        target_size = (704, 1280)
+        resized_depth_image, resized_color_image = grasp_pose_examples_utils.resize_images(depth_image, color_image, target_size)
+        
 
-            # 显示抓取点
-            cv2.circle(color_image, (grasp_point[0], grasp_point[1]), 5, (0, 0, 255), -1)
+        # 对齐深度图像和彩色图像
+        dc_align_extrinsics = statical_camera_info.align_depth_color_extrinsics()
+        aligned_depth_image = align_depth_color.align_images(resized_depth_image, resized_color_image, depth_intrinsic_matrix, color_intrinsic_matrix, dc_align_extrinsics)
 
-            # 将相机坐标转换为机械臂坐标系
-            robot_grasp_point = camera_to_robot_frame(grasp_point, T_cam2gripper, intrinsics, depth_scale)
+        # 进行目标检测
+        # 主代码中调用 ObjectDetection
+        detect_result = object_detection.ObjectDetection(detect_object=expecting_detected_object, color_image=resized_color_image, detpth_image=aligned_depth_image, color_intrinsics=color_intrinsic_matrix)
+        objects_dict, object_keys = detect_result.get_results()
 
-            # 控制机械臂
-            control_kinova(robot_grasp_point)
+        # 遍历检测到的目标
+        if len(object_keys) != 0:
+            for key in object_keys:
+                if expecting_detected_object not in key:
+                    continue
+                xyxy = objects_dict[key]['xyxy']
+                x1, y1, x2, y2 = [int(i) for i in xyxy]
 
-            # 显示图像
-            cv2.imshow('RealSense Color', color_image)
-            cv2.imshow('RealSense Depth', cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET))
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+                object_depth_image = resized_depth_image[int(y1):int(y2), int(x1):int(x2)]
+                object_color_image = resized_color_image[int(y1):int(y2), int(x1):int(x2)]
+                # object_color_image = resized_color_image[int(y1):int(y2), int(x1):int(x2)]
 
-    finally:
-        # 停止管道
-        pipeline.stop()
-        cv2.destroyAllWindows()
+                # 使用GGCNN模型预测抓取点
+                with torch.no_grad():
+                    depthT = torch.from_numpy(object_depth_image.reshape(1, 1, y2-y1, x2-x1).astype(np.float32))
+                    grasp_imgs = ggcnn_model(depthT)
 
-if __name__ == "__main__":
-    __main__()
+                q_img, ang_img, width_img = grocess_output.post_process_output(q_img=grasp_imgs[0], cos_img=grasp_imgs[1], sin_img=grasp_imgs[2], width_img=grasp_imgs[3])
+                grasps = grasp.detect_grasps(q_img=q_img, ang_img=ang_img, width_img=width_img, no_grasps=1)
 
+                for grasp_objects in grasps:
+                    horizon_angle = grasp_objects.as_gr.angle
+                    grasp_point = grasp_objects.as_gr.as_grasp
+                    rectangle_center = grasp_objects.as_gr.center
+                    rectengle_length = grasp_objects.as_gr.length
+                    rectengle_width = grasp_objects.as_gr.width
+                    polygon_points = grasp_objects.as_gr.polygon_coords
+
+                    # 假设 grasp_point 是一个包含抓取点坐标的元组 (x, y)
+                    bbox_grasp_point = (rectangle_center[0], rectangle_center[1])
+                    grasp_point = (rectangle_center[0] + x1, rectangle_center[1] + y1)
+
+                    # 在 object_color_image 上绘制抓取点
+                    cv2.circle(object_color_image, bbox_grasp_point, 5, (0, 0, 255), -1)  # 红色圆点，半径为5
+
+                    # 显示绘制后的图像（可选）
+                    cv2.imshow("Grasp Point", object_color_image)
+
+                    # 在深度图像和彩色图像上绘制抓取点
+                    depth_image_color = cv2.applyColorMap(cv2.convertScaleAbs(aligned_depth_image, alpha=0.03), cv2.COLORMAP_JET)
+                    cv2.circle(depth_image_color, grasp_point, 5, (0, 255, 0), -1)
+                    cv2.circle(resized_color_image, grasp_point, 5, (0, 255, 0), -1)
+
+                    cv2.imshow('Depth Image with Grasp Point', depth_image_color)
+                    cv2.imshow('Color Image with Grasp Point', resized_color_image)
+
+                    current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    depth_image_path = f'./grasp_output/yolo_grasp_image/depth_image_{current_time}.png'
+                    cv2.imwrite(depth_image_path, depth_image_color)
+                    color_image_path = f'./grasp_output/yolo_grasp_image/color_image_{current_time}.png'
+                    cv2.imwrite(color_image_path, resized_color_image)
+                    bbox_image_path = f'./grasp_output/yolo_grasp_image/bbox_image_{current_time}.png'
+                    cv2.imwrite(bbox_image_path, object_color_image)
+                    
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            stop_flag = False
+
+finally:
+    pipeline.stop()
+    cv2.destroyAllWindows()
