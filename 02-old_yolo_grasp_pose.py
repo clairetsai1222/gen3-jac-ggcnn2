@@ -18,7 +18,7 @@ import datetime
 
 from models.ggcnn2 import GGCNN2
 from utils.calibrate import align_depth_color
-from utils.dataset_processing import grasp, grocess_output, grasp_pose_examples_utils
+from utils.dataset_processing import grasp, grocess_output, take_place_utils
 from utils.calibrate import statical_camera_info
 
 # 导入YOLO模型相关的库
@@ -66,7 +66,7 @@ try:
 
         # 调整深度图像和彩色图像尺寸为704x1280
         target_size = (704, 1280)
-        resized_depth_image, resized_color_image = grasp_pose_examples_utils.resize_images(depth_image, color_image, target_size)
+        resized_depth_image, resized_color_image = take_place_utils.resize_images(depth_image, color_image, target_size)
         
 
         # 对齐深度图像和彩色图像

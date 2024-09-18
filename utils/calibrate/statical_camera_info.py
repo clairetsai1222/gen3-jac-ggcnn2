@@ -28,3 +28,14 @@ def align_depth_color_extrinsics():
     ])
     
     return align_extrinsics_matrix
+
+# 获取相机外参
+def get_camera_extrinsics():
+    extrinsic_matrix = np.array([
+        [  0.99362922,   0.05213893,   0.09991244, -11.99744475],
+        [ -0.03018934,   0.97728664,  -0.2097604 ,  -4.39653127],
+        [ -0.10857978,   0.20540777,   0.97263461,  26.78985042],
+        [  0.        ,   0.        ,   0.        ,   1.        ]
+    ])
+    
+    return extrinsic_matrix
