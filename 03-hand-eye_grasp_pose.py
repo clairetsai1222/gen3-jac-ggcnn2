@@ -19,12 +19,14 @@ import numpy as np
 import cv2
 import torch
 import datetime
+import time
 
 from models.ggcnn2 import GGCNN2
 from utils.calibrate import align_depth_color
 from utils.dataset_processing import grasp, grocess_output, take_place_utils
 from utils.calibrate import statical_camera_info
 from utils.yolo import object_detection
+from utils.realsense_d435i import realsense_depth
 
 # 导入YOLO模型相关的库
 from ultralytics import YOLO
@@ -33,13 +35,11 @@ from ultralytics import YOLO
 depth_intrinsic_matrix, color_intrinsic_matrix, depth_scale = statical_camera_info.get_camera_intrinsics()
 
 # 创建RealSense管道
-pipeline = rs.pipeline()
-config = rs.config()
-config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 30)
-config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
+# Initialize Camera Intel Realsense
+dc = realsense_depth.DepthCamera()
 
-# 启动管道
-pipeline.start(config)
+
+
 
 # 加载GGCNN模型
 ggcnn_model = GGCNN2()
@@ -47,35 +47,34 @@ ggcnn_model.load_state_dict(torch.load('./ggcnn2_weights_jacquard/epoch_100_iou_
 
 expecting_detected_object = input("Please input the label of the object you want to detect: ")
 
+
 stop_flag = True
 try:
     while stop_flag:
-        # 等待下一帧
-        frames = pipeline.wait_for_frames()  
-        depth_frame = frames.get_depth_frame()
-        color_frame = frames.get_color_frame()
 
-        if not depth_frame or not color_frame:
+        ret, depth_image, color_image = dc.get_frame()
+
+        if not ret:
             continue
-
-        depth_image = np.asanyarray(depth_frame.get_data())
-        color_image = np.asanyarray(color_frame.get_data())
 
         # 调整深度图像和彩色图像尺寸
         resized_depth_image, resized_color_image = take_place_utils.resize_images(depth_image, color_image, (704, 1280))
 
-        # 对齐深度图像和彩色图像
-        aligned_depth_image = align_depth_color.align_images(resized_depth_image, resized_color_image, depth_intrinsic_matrix, color_intrinsic_matrix, statical_camera_info.align_depth_color_extrinsics())
+        ori_resized_depth_image = resized_depth_image.copy()
+
+        # 对齐深度图像和彩色图像(代码存在问题，待修复，直接使用intel api)
+        # aligned_depth_image = align_depth_color.align_images(resized_depth_image, resized_color_image, depth_intrinsic_matrix, color_intrinsic_matrix, statical_camera_info.align_depth_color_extrinsics())
 
         # 进行目标检测
-        detect_result = object_detection.ObjectDetection(detect_object=expecting_detected_object, color_image=resized_color_image, detpth_image=aligned_depth_image, color_intrinsics=color_intrinsic_matrix)
+        detect_result = object_detection.ObjectDetection(detect_object=expecting_detected_object, color_image=resized_color_image, detpth_image=resized_depth_image, color_intrinsics=color_intrinsic_matrix)
         objects_dict, object_keys = detect_result.get_results()
 
         for key in filter(lambda k: expecting_detected_object in k, object_keys):
             xyxy = objects_dict[key]['xyxy']
             x1, y1, x2, y2 = map(int, xyxy)
-
+            x1, y1, x2, y2 = x1 - 10, y1 - 10, x2 + 10, y2 + 10
             object_depth_image = resized_depth_image[y1:y2, x1:x2]
+            object_color_image = resized_color_image[y1:y2, x1:x2]
 
             # 使用GGCNN模型预测抓取点
             with torch.no_grad():
@@ -86,23 +85,54 @@ try:
             grasps = grasp.detect_grasps(q_img=q_img, ang_img=ang_img, width_img=width_img, no_grasps=1)
 
             for grasp_objects in grasps:
+                # 获取当前时间，方便图像命名
+                current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            
                 grasp_point = grasp_objects.as_gr.as_grasp
                 rectangle_center = grasp_objects.as_gr.center
-                grasp_point = (rectangle_center[0] + x1, rectangle_center[1] + y1)
+                crop_grasp_point = (min(rectangle_center[0], x2-x1), min(rectangle_center[1], y2-y1))
+                grasp_point = (crop_grasp_point[0] + x1, crop_grasp_point[1] + y1)
+                cv2.circle(object_color_image, crop_grasp_point, 5, (0, 255, 0), -1)
+                cv2.imwrite(f'./grasp_output/arm_frame_grasp_image/object_color_image_{current_time}.png', object_color_image)
 
-                # 画抓取点
-                for img, title in zip((resized_color_image, aligned_depth_image), ('Color Image with Grasp Point', 'Depth Image with Grasp Point')):
-                    cv2.circle(img, grasp_point, 5, (0, 255, 0), -1)
-                    cv2.imshow(title, img)
+                print("2D camaera frame:", grasp_point, current_time)
 
                 # 保存图像
-                current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                for img, suffix in zip((resized_color_image, aligned_depth_image), ('color', 'depth')):
-                    cv2.imwrite(f'./grasp_output/yolo_grasp_image/{suffix}_image_{current_time}.png', img)
+                for img, suffix in zip((resized_color_image, resized_depth_image), ('color', 'depth')):
+                    cv2.circle(img, grasp_point, 5, (0, 255, 0), -1)
+                    if suffix == 'depth':
+                        img = take_place_utils.colorize_depth_image(img)
+                    cv2.imwrite(f'./grasp_output/arm_frame_grasp_image/{suffix}_image_{current_time}.png', img)
+
+                # # 绘制伪色彩深度图
+                # colored_depth_image = take_place_utils.colorize_depth_image(resized_depth_image)
+                # # 显示上色后的深度图像
+                # cv2.imshow('Colored Depth Image', colored_depth_image)
+                # cv2.imwrite(f'./grasp_output/arm_frame_grasp_image/colored_depth_image_{current_time}.png', colored_depth_image)
 
                 # 计算3D抓取点
-                grasp_point_3d = take_place_utils.calculate_3d_grasp_point(grasp_point, resized_depth_image, depth_intrinsic_matrix, depth_scale)
-                print("3D Grasp Point:", grasp_point_3d)
+                grasp_point_3d = take_place_utils.calculate_3d_grasp_point(grasp_point, ori_resized_depth_image, depth_intrinsic_matrix, depth_scale)
+                if grasp_point_3d is None:
+                    print("计算3D抓取点失败，深度值无效。")
+                    exit()
+                else:
+                    print("3D camera frame:", grasp_point_3d)
+
+                # 建构齐次坐标
+                grasp_point_homogeneous = np.array([grasp_point_3d[0], grasp_point_3d[1], grasp_point_3d[2], 1])
+                # 齐次坐标与外参矩阵相乘，以获取在机械臂坐标系下的坐标
+                T_camera_to_robot = statical_camera_info.get_camera_extrinsics()
+                grasp_point_robot = np.dot(T_camera_to_robot, grasp_point_homogeneous)
+                # 机械臂坐标系下的抓取点
+                grasp_point_robot_3d = grasp_point_robot[:3]
+
+                print("3D arm base frame:", grasp_point_robot_3d)
+
+
+                # 等待1秒
+                time.sleep(2)
+
+
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             stop_flag = False
@@ -111,5 +141,5 @@ except Exception as e:
     print(f"An error occurred: {e}")
 
 finally:
-    pipeline.stop()
+    dc.release()
     cv2.destroyAllWindows()

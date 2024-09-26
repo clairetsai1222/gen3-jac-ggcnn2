@@ -29,9 +29,11 @@ class RealSenseCamera:
 
         return depth_frame, color_frame
 
-    def get_intrinsics(self, depth_frame, color_frame):
+    def get_intrinsics_coefficients(self, depth_frame, color_frame):
         depth_intrinsics = depth_frame.profile.as_video_stream_profile().intrinsics
         color_intrinsics = color_frame.profile.as_video_stream_profile().intrinsics
+
+        color_coefficients = np.array(color_intrinsics.coeffs)
 
         intrinsic_matrix_depth = np.array([
             [depth_intrinsics.fx, 0, depth_intrinsics.ppx],
@@ -45,7 +47,8 @@ class RealSenseCamera:
             [0, 0, 1]
         ])
 
-        return intrinsic_matrix_depth, intrinsic_matrix_color
+        return intrinsic_matrix_depth, intrinsic_matrix_color, color_coefficients
+    
 
     def get_depth_scale(self):
         depth_scale = self.pipeline.get_active_profile().get_device().first_depth_sensor().get_depth_scale()
@@ -53,7 +56,7 @@ class RealSenseCamera:
 
     def print_intrinsics_and_scale(self):
         depth_frame, color_frame = self.get_frames()
-        intrinsic_matrix_depth, intrinsic_matrix_color = self.get_intrinsics(depth_frame, color_frame)
+        intrinsic_matrix_depth, intrinsic_matrix_color, color_coefficients = self.get_intrinsics_coefficients(depth_frame, color_frame)
         depth_scale_patch = self.get_depth_scale()
 
         print("Depth Intrinsic Matrix:")
@@ -61,7 +64,8 @@ class RealSenseCamera:
         print("Color Intrinsic Matrix:")
         print(intrinsic_matrix_color)
         print("Depth Scale (factor_depth):", depth_scale_patch)
-        return intrinsic_matrix_depth, intrinsic_matrix_color, depth_scale_patch
+        print("Color Coefficients:", color_coefficients)
+        return intrinsic_matrix_depth, intrinsic_matrix_color, depth_scale_patch, color_coefficients
 
     def capture_frames(self):
         try:
