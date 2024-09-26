@@ -44,7 +44,6 @@ def aruco_detect(frame, save_flag=False, path=None):
     else:
         print("输入图像的通道数不正确，预计为3个通道。")
     aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
-    print("Aruco 字典成功获取。")
     parameters = aruco.DetectorParameters()
     
     # detectMarkers(...)
@@ -54,6 +53,9 @@ def aruco_detect(frame, save_flag=False, path=None):
     # lists of ids and the corners beloning to each id
     detector = aruco.ArucoDetector(aruco_dict, parameters)
     corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
+    if ids is None:
+        print("未检测到标定板。")
+        return None, None, None
     ids = ids.flatten()
     
     #将标定板上的标志按id排序，保证与3D点一一对应
@@ -79,20 +81,20 @@ def aruco_detect(frame, save_flag=False, path=None):
         # print(c)
         cv2.putText(frame, str(i+1), (int(c[0]), int(c[1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
                     1, cv2.LINE_AA)
-    
-    cv2.imshow("frame", frame)
-    key = cv2.waitKey(0)
+    if save_flag:
+        cv2.imshow("frame", frame)
     current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     if save_flag:
-        if key == ord('s'):  # 如果按下's'键
+        key = cv2.waitKey(2)
+        if key == ord('s'):  # 如果按下's'键存储图像
             # 获取当前系统时间并格式化
             
             img_name = f'{current_time}_aruco_image.png'  # 添加时间戳到文件名
             save_path = os.path.join(path,img_name)
             cv2.imwrite(save_path, origin_frame)  # 保存图像
             print(f"图像已保存至：{save_path}")
-    
-        cv2.waitKey(1)  # 防止窗口冻结
+        else:  # 如果按下'd'键丢弃图像
+            return None, None, None
     else:
         cv2.waitKey(1)
     return corners_sort, origin_frame, current_time
@@ -129,10 +131,22 @@ def camera_calibrate(grid_size,distance,frame,size = (7,5)):
     point_3d = generate_3D_point(grid_size, distance, size)
     #检测图片中标定板的2D point
     corners_2d, _, _ = aruco_detect(frame)
-
+    if corners_2d is None: 
+        return None, None
     #转为统一数据类型
-    point_3d = [point_3d.astype('float32')]
-    corners_2d = [corners_2d.astype('float32')]
+    # point_3d = [point_3d.astype('float32')]
+    # corners_2d = [corners_2d.astype('float32')]
+    point_3d = point_3d.astype('float32')
+    corners_2d = corners_2d.astype('float32')
+
+    print("3D Points Count:", len(point_3d))
+    print("2D Corners Count:", len(corners_2d))
+
+
+    if len(point_3d) != len(corners_2d):
+        print("3D点数与2D点数不匹配，请检查标定板是否正确。")
+        return None, None
+   
     # 利用3D和2D对应点计算变换矩阵
     (success, rotation_vector, translation_v) = cv2.solvePnP(np.array(point_3d), np.array(corners_2d), color_intrinsic_matrix, color_coefficients,flags=cv2.SOLVEPNP_ITERATIVE)
     rotation_v = cv2.Rodrigues(rotation_vector)[0]
