@@ -1,0 +1,17 @@
+ultralytics==8.2.90
+opencv-contrib-python==4.10.0.84
+opencv-python==4.10.0.84
+matplotlib==3.5.3
+# scikit-image==0.19.3
+scikit-image==0.21.0
+scipy==1.10.1
+imageio==2.28.1
+torchsummary==1.5.1
+pyyaml
+imagecodecs
+pyrealsense2
+numpy==1.24.3
+
+
+
+   
