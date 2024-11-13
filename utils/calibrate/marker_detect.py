@@ -50,10 +50,19 @@ def aruco_detect(frame, path=None):
     # lists of ids and the corners beloning to each id
     detector = aruco.ArucoDetector(aruco_dict, parameters)
     corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
+    #画出标志位置
+    aruco.drawDetectedMarkers(frame, corners,ids)
+
+
+    # cv2.imshow("frame",frame)
+    # cv2.waitKey(1)
+    # cv2.destroyAllWindows()
+
     if ids is None:
         print("未检测到标定板。")
         corners_sort = None
     else:
+        print("Avalible ids")
         ids = ids.flatten()
     
         #将标定板上的标志按id排序，保证与3D点一一对应
@@ -76,11 +85,11 @@ def aruco_detect(frame, path=None):
         # 绘制特征点
         for i,c in enumerate(corners_sort):
             # print(c)
-            cv2.putText(frame, str(i+1), (int(c[0]), int(c[1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0),
+            cv2.putText(frame, str(i+1), (int(c[0]), int(c[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0),
                         1, cv2.LINE_AA)
     
-    cv2.imshow("frame", frame)
-    key = cv2.waitKey(1000)
+    # cv2.imshow("frame", frame)
+    # key = cv2.waitKey(10)
     current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     saved_flag = False
     if path is not None:
@@ -99,16 +108,16 @@ def aruco_detect(frame, path=None):
     cv2.waitKey(1)
     return corners_sort, origin_frame, current_time, saved_flag
 
-# 生成标定板3D坐标(marker从左到右，从上到下的顺序，每个marker左上角-右上角-右下角-左下角的顺序生成)
+# 生成标定板每个标记脚点的3D坐标(marker从左到右，从上到下的顺序，每个marker左上角-右上角-右下角-左下角的顺序生成)
 def generate_3D_point(grid_size,distance,size = (7,5)):
-    point_n = size[0]*size[1]*4
+    point_n = size[0]*size[1]*4 # 计算标记板上的点总数
     point_3d = np.zeros((point_n,3),np.float16)
     #print(point_3d.shape)
     for i in range(point_n):
         lu_idx = int(np.floor(i/4))*4
         #print(lu_idx)
         if i%4==0:
-            point_3d[i,0] = np.floor(i/4)%5*(grid_size+distance)
+            point_3d[i,0] = np.floor(i/4)%size[1]*(grid_size+distance)
             point_3d[i,1] = np.floor(i/(4*size[1]))*(grid_size+distance)
         if i%4==1:
             point_3d[i,0] = point_3d[lu_idx,0]+grid_size
@@ -120,6 +129,7 @@ def generate_3D_point(grid_size,distance,size = (7,5)):
             point_3d[i, 0] = point_3d[lu_idx, 0]
             point_3d[i, 1] = point_3d[lu_idx, 1] + grid_size
     return point_3d
+
 
 #grid_size：每个marker矩形的长度
 #distance：marker之间的距离长度
@@ -163,11 +173,13 @@ def calculate_rejection_error(corners_2d,point_3d,rotation_v,translation_v,camer
 
 if __name__ == '__main__':
 
-    frame = cv2.imread("./test_aruco_calibration/aruco_test.jpg", -1)
+    frame = cv2.imread("./debug_calibration/test.png", -1)
     if frame is None:
         print("图像未成功加载，请检查路径。")
     else:
         print("图像加载成功，通道数:", frame.shape)
 
-    rvec,tvec = camera_calibrate(10,1,frame)
+    rvec,tvec = camera_calibrate(10,1,frame,(7,5))
+    print("旋转向量：\n", rvec)
+    print("平移向量：\n", tvec)
 

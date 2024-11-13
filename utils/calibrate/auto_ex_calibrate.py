@@ -24,7 +24,6 @@ mtx = np.array([
     ])
 
 gp = gen3_gripper_pose.GripperPose()
-dist = np.array([0, 0, 0, 0, 0])
 
 # Initialize Camera Intel Realsense
 dc = realsense_depth.DepthCamera()
@@ -65,9 +64,12 @@ def get_Ts_board_in_camera(img_name):
         print("img read error!")
         return False
     w,h,c = img.shape
-    newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 0, (w, h))  # 自由比例参数
-    img = cv2.undistort(img, mtx, dist, None, newcameramtx)
+    # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 0, (w, h))  # 自由比例参数
+    # img = cv2.undistort(img, mtx, dist, None, newcameramtx)
     R_board_in_camera,T_board_in_camera = camera_calibrate(grid_size,offset,img)
+
+    print("R_board_in_camera:\n",R_board_in_camera)
+    print("T_board_in_camera:\n",T_board_in_camera)
 
     if R_board_in_camera is None:
         print("board not detected!")
@@ -79,7 +81,6 @@ def get_Ts_board_in_camera(img_name):
     Ts_board_in_camera[3,3] = 1
     return Ts_board_in_camera
 
-
 def get_Ts_hand_in_base(file):
     if not os.path.exists(file):
         print("file not exist!")
@@ -88,10 +89,13 @@ def get_Ts_hand_in_base(file):
         line = f.readline()
         Ts = line.split(" ")
         Ts = [float(i) for i in Ts]
-        #R_hand_in_base= eulerAnglesToRotationMatrix(np.array(Ts[3:]))
+        # R_hand_in_base= eulerAnglesToRotationMatrix(np.array(Ts[3:]))
         R_hand_in_base= R.from_euler('xyz',np.array(Ts[3:]),degrees=True).as_matrix()
-
         T_hand_in_base = Ts[:3]
+
+        print("R_hand_in_base:\n",R_hand_in_base)
+        print("T_hand_in_base:\n",T_hand_in_base)
+
         # R T拼接
         Ts_hand_in_base = np.zeros((4, 4), np.float64)
         Ts_hand_in_base[:3, :3] = R_hand_in_base
@@ -115,10 +119,10 @@ def calibrate_opencv(Ts_board_to_camera,Ts_hand_to_base):
         R_board_to_camera.append(np.array(Ts_board_to_camera[i][:3,:3]))
         T_board_to_camera.append(np.array(Ts_board_to_camera[i][:3,3]))
 
-    # print("R_base_to_hand:\n",R_base_to_hand)
-    # print("T_base_to_hand:\n",T_base_to_hand)
-    # print("R_board_to_camera:\n", R_board_to_camera)
-    # print("T_board_to_camera:\n", T_board_to_camera)
+    print("R_base_to_hand:\n",R_base_to_hand)
+    print("T_base_to_hand:\n",T_base_to_hand)
+    print("R_board_to_camera:\n", R_board_to_camera)
+    print("T_board_to_camera:\n", T_board_to_camera)
 
     R_camera_to_base,T_camera_to_base = cv2.calibrateHandEye(R_base_to_hand,T_base_to_hand,R_board_to_camera,T_board_to_camera,method=cv2.CALIB_HAND_EYE_TSAI)
     return R_camera_to_base,T_camera_to_base
@@ -137,13 +141,14 @@ def calibrate(path):
         board_in_camera = get_Ts_board_in_camera(img_name)
         hand_in_base = get_Ts_hand_in_base(file_name)
         # print(f"board_in_camera:\n{board_in_camera}\nhand_in_base:\n{hand_in_base}")
-        if board_in_camera is not None and hand_in_base is not None:
+        if not isinstance(board_in_camera, np.ndarray) or not isinstance(hand_in_base, np.ndarray):
+            print("image!{} abandoned!".format(img_name))
+            continue
+        else:
             Ts_board_in_camera_all.append(board_in_camera)
             Ts_hand_in_base_all.append(hand_in_base)
             totle_num += 1
-        else:
-            print("image!{} abandoned!".format(img_name))
-            continue
+            
     print("totle calibration imagenum:",totle_num)
 
     R_camera_to_base,T_camera_to_base = calibrate_opencv(Ts_board_in_camera_all,Ts_hand_in_base_all)
@@ -157,7 +162,7 @@ def get_all_files(path, extension="*.png"):
 
 if __name__ == '__main__':
     #图片所在路径
-    path = f'./ex_aruco_calibration/'
+    path = f'./debug_calibration/'
     num = input("saving numbers...\n")
     batch_save_img_and_base_pose(int(num), path=path)
     R_camera_to_base,T_camera_to_base = calibrate(path)
