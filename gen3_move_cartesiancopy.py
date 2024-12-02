@@ -95,7 +95,7 @@ def example_cartesian_action_movement(base, base_cyclic, point):
 
     cartesian_pose = action.reach_pose.target_pose
     
-    cartesian_pose.x = (point[0]-7)     *0.01     # (meters) 
+    cartesian_pose.x = (point[0]+3)     *0.01     # (meters) 
     cartesian_pose.y = (point[1]+20)     *0.01   # (meters)
     cartesian_pose.z = point[2]     *0.01   # (meters)
     cartesian_pose.theta_x = feedback.base.tool_pose_theta_x # (degrees)夹爪角度：+往下；-往上
