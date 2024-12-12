@@ -22,14 +22,20 @@ import datetime
 import time
 
 from models.ggcnn2 import GGCNN2
+from PIL import Image
 from utils.dataset_processing import grasp, grocess_output, take_place_utils
 from utils.calibrate import statical_camera_info
-from utils.yolo import object_detection
 from utils.d435i_depth_detect import realsense_depth
+from utils.log import save_log
 import gen3_move_cartesiancopy as move
 
-# 导入YOLO模型相关的库
-from ultralytics import YOLO
+# YOLO
+# from utils.yolo import object_detection
+# from ultralytics import YOLO
+
+# Grounding Dino
+from utils.dino import object_detection
+
 
 # 加载相机内参
 _, depth_scale, color_coefficients = statical_camera_info.get_camera_intrinsics()
@@ -58,7 +64,7 @@ try:
 
         # 调整深度图像和彩色图像尺寸
         resized_depth_image, resized_color_image = take_place_utils.resize_images(depth_image, color_image, (704, 1280))
-
+        # print(resized_color_image.size())
         ori_resized_depth_image = resized_depth_image.copy()
 
         # 对齐深度图像和彩色图像(代码存在问题，待修复，直接使用intel api)
@@ -67,6 +73,7 @@ try:
         # 进行目标检测
         detect_result = object_detection.ObjectDetection(detect_object=expecting_detected_object, color_image=resized_color_image, detpth_image=resized_depth_image, color_intrinsics=color_intrinsic)
         objects_dict, object_keys = detect_result.get_results()
+        # print(str(objects_dict) + "\n" + str(object_keys))
 
         for key in filter(lambda k: expecting_detected_object in k, object_keys):
             xyxy = objects_dict[key]['xyxy']
@@ -74,7 +81,9 @@ try:
             x1, y1, x2, y2 = x1 - 10, y1 - 10, x2 + 10, y2 + 10
             object_depth_image = resized_depth_image[y1:y2, x1:x2]
             object_color_image = resized_color_image[y1:y2, x1:x2]
-
+            #print(resized_depth_image)
+            #print("###################################")
+            #print(object_depth_image)
             # 使用GGCNN模型预测抓取点
             with torch.no_grad():
                 depthT = torch.from_numpy(object_depth_image.reshape(1, 1, y2 - y1, x2 - x1).astype(np.float32))
@@ -92,17 +101,18 @@ try:
                 crop_grasp_point = (min(rectangle_center[0], x2-x1), min(rectangle_center[1], y2-y1))
                 grasp_point = (crop_grasp_point[0] + x1, crop_grasp_point[1] + y1)
                 cv2.circle(object_color_image, crop_grasp_point, 5, (0, 255, 0), -1)
-                cv2.imwrite(f'./grasp_output/arm_frame_grasp_image/object_color_image_{current_time}.png', object_color_image)
+                cv2.circle(object_depth_image, crop_grasp_point, 5, (0, 255, 0), -1)
+                # cv2.imwrite(f'./grasp_output/arm_frame_grasp_image/object_color_image_{current_time}.png', object_color_image)
                 cv2.imshow('object_color_image', object_color_image)
 
                 print("2D camaera frame:", grasp_point, current_time)
 
                 # 保存图像
-                for img, suffix in zip((resized_color_image, resized_depth_image), ('color', 'depth')):
-                    cv2.circle(img, grasp_point, 5, (0, 255, 0), -1)
-                    if suffix == 'depth':
-                        img = take_place_utils.colorize_depth_image(img)
-                    cv2.imwrite(f'./grasp_output/arm_frame_grasp_image/{suffix}_image_{current_time}.png', img)
+                #for img, suffix in zip((resized_color_image, resized_depth_image), ('color', 'depth')):
+                #    cv2.circle(img, grasp_point, 5, (0, 255, 0), -1)
+                #    if suffix == 'depth':
+                #        img = take_place_utils.colorize_depth_image(img)
+                #    cv2.imwrite(f'./grasp_output/arm_frame_grasp_image/{suffix}_image_{current_time}.png', img)
 
                 # # 绘制伪色彩深度图
                 # colored_depth_image = take_place_utils.colorize_depth_image(resized_depth_image)
@@ -137,8 +147,7 @@ try:
                 # grasp_point_robot_3d = grasp_point_robot[:3] 
                 grasp_point_robot_3d = [grasp_point_robot[2], grasp_point_robot[0], grasp_point_robot[1]]
                 print("3D arm base frame:", grasp_point_robot_3d)
-
-
+                to_save = {"grasp_point_3d": grasp_point_robot_3d, "object_color_image": Image.fromarray(object_color_image).convert("RGB"), "object_depth_image": Image.fromarray(object_depth_image).convert("RGB")}
 
                 # 等待1秒
                 time.sleep(3)
@@ -146,9 +155,11 @@ try:
         if cv2.waitKey(1) & 0xFF == ord('g'):
             stop_flag = False
             move.move_action(grasp_point_robot_3d)
+            save_log.Save(to_save)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             stop_flag = False
+            save_log.Save(to_save)
 
 except Exception as e:
     print(f"An error occurred: {e}")

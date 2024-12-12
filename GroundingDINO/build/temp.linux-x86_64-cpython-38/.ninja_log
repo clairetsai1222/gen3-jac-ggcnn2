@@ -1,0 +1,5 @@
+# ninja log v5
+0	1367	1733152530140875502	/home/claire/gya/gen3-jac-ggcnn2-dino/GroundingDINO/build/temp.linux-x86_64-cpython-38/home/claire/gya/gen3-jac-ggcnn2-dino/GroundingDINO/groundingdino/models/GroundingDINO/csrc/cuda_version.o	7614e2562b4d7c4d
+0	15307	1733152544065582196	/home/claire/gya/gen3-jac-ggcnn2-dino/GroundingDINO/build/temp.linux-x86_64-cpython-38/home/claire/gya/gen3-jac-ggcnn2-dino/GroundingDINO/groundingdino/models/GroundingDINO/csrc/MsDeformAttn/ms_deform_attn_cpu.o	420578c0e8d26ab9
+0	33945	1733152562698498292	/home/claire/gya/gen3-jac-ggcnn2-dino/GroundingDINO/build/temp.linux-x86_64-cpython-38/home/claire/gya/gen3-jac-ggcnn2-dino/GroundingDINO/groundingdino/models/GroundingDINO/csrc/MsDeformAttn/ms_deform_attn_cuda.o	5a3baf3770831e34
+1	43077	1733152571818934716	/home/claire/gya/gen3-jac-ggcnn2-dino/GroundingDINO/build/temp.linux-x86_64-cpython-38/home/claire/gya/gen3-jac-ggcnn2-dino/GroundingDINO/groundingdino/models/GroundingDINO/csrc/vision.o	afb29ccdd3bed0be
