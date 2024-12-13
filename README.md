@@ -85,7 +85,7 @@ cd weights
 wget -q https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha/groundingdino_swint_ogc.pth
 ```
 
-## 4. 运行：
+## 运行：
 ```
 cd ..
 cd ..
