@@ -23,6 +23,10 @@ from kortex_api.autogen.client_stubs.BaseCyclicClientRpc import BaseCyclicClient
 
 from kortex_api.autogen.messages import Base_pb2, BaseCyclic_pb2, Common_pb2
 
+# Import the utilities helper module
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import utilities
+
 # Maximum allowed waiting time during actions (in seconds)
 TIMEOUT_DURATION = 20
 
@@ -183,6 +187,33 @@ def create_cartesian_action(base, base_cyclic, target):
 
     return action
 
+def get_feedback():
+    """
+    Output: [x, y, z, theta_x, theta_y, theta_z]
+    """
+
+    # Parse arguments
+    args = utilities.parseConnectionArguments()
+    
+    # Create connection to the device and get the router
+    with utilities.DeviceConnection.createTcpConnection(args) as router:
+
+        # Create required services
+        base = BaseClient(router)
+        base_cyclic = BaseCyclicClient(router)
+
+        feedback = base_cyclic.RefreshFeedback()
+
+    # cartesian_pose.x = feedback.base.tool_pose_x 
+    # cartesian_pose.y = feedback.base.tool_pose_y 
+    # cartesian_pose.z = feedback.base.tool_pose_z 
+    # cartesian_pose.theta_x = feedback.base.tool_pose_theta_x # (degrees)夹爪角度：+往下；-往上
+    # cartesian_pose.theta_y = feedback.base.tool_pose_theta_y # (degrees)夹爪角度：+逆时针；-顺时针
+    # cartesian_pose.theta_z = feedback.base.tool_pose_theta_z # (degrees)夹爪角度：+左转；-右转
+
+        return ([feedback.base.tool_pose_x, feedback.base.tool_pose_y, feedback.base.tool_pose_z, 
+        feedback.base.tool_pose_theta_x, feedback.base.tool_pose_theta_y, feedback.base.tool_pose_theta_z])
+
 
 def move_action(action_list):
     """
@@ -190,9 +221,6 @@ def move_action(action_list):
     [x, y, z] or [x, y, z, theta_x, theta_y, theta_z]
     or a list composed of the first two, and the actions will be executed in order.
     """
-    # Import the utilities helper module
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    import utilities
 
     # Parse arguments
     args = utilities.parseConnectionArguments()
