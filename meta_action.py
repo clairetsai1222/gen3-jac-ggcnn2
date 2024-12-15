@@ -5,6 +5,9 @@ import time
 class ActionSequence:
  
     def __init__(self):
+        """
+        Use execute function to transfer command to robot arm.
+        """
         self.action_list=[]
         #[type=0,x,y,z,tx,ty,tz]
         #[type=1,speed]
@@ -18,11 +21,17 @@ class ActionSequence:
     # meta actions below:
 
     def move_to(self, target):
+        """
+        Intput: [x, y, z] or [x, y, z, theta_x, theta_y, theta_z]
+        """
         self.action_list.append([0] + target)
         for i, p in enumerate(target):
             self.current_position[i] = p
 
     def move_gripper(self, speed): # close: speed < 0
+        """
+        Intput: speed<0: close; speed>0 open
+        """
         if speed < 0:
             self.grasp_position = self.current_position
         if speed > 0:
@@ -31,11 +40,17 @@ class ActionSequence:
             self.action_list.append([1, speed])
 
     def wait(self, time):
+        """
+        Intput: seconds
+        """
         self.action_list.append([2, time])
     
     # always used actions below: 
 
     def dump(self, degree, wait_time):
+        """
+        Intput: degree, and time stayed after dump
+        """
         position = self.current_position
         position[4] += degree
         self.action_list.append([0] + position)
@@ -46,6 +61,9 @@ class ActionSequence:
         self.action_list.append([0] + position)
     
     def shake(self, strength):
+        """
+        Intput: degree of the shake action
+        """
         position = self.current_position
         position[4] += strength
         self.action_list.append([0] + position)
@@ -55,6 +73,9 @@ class ActionSequence:
         self.action_list.append([0] + position)
         
     def put_back(self):
+        """
+        Experimental!
+        """
         if self.grasp_position != None:
             self.move_to(self.grasp_position)
             self.move_gripper(0.1)
