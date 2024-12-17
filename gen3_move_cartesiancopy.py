@@ -122,21 +122,21 @@ def example_cartesian_action_movement_sequence(base, base_cyclic, action_list):
     task = []
     
     print("Appending Actions to Sequence")
-    if isinstance(action_sequence[0], Iterable):
-        for i, target in enumerate(action_sequence):
+    if isinstance(action_list[0], Iterable):
+        for i, target in enumerate(action_list):
             action = create_cartesian_action(base, base_cyclic, target)
             task.append(action_sequence.tasks.add())
             task[i].group_identifier = i
             task[i].action.CopyFrom(action)
     else:
-        action = create_cartesian_action(base, base_cyclic, action_sequence)
+        action = create_cartesian_action(base, base_cyclic, action_list)
         task.append(action_sequence.tasks.add())
         task[i].group_identifier = i
         task[i].action.CopyFrom(action)
 
 
     e = threading.Event()
-    notification_handle = base.OnNotificationSequenceActionTopic(
+    notification_handle = base.OnNotificationSequenceInfoTopic(
         check_for_sequence_end_or_abort(e),
         Base_pb2.NotificationOptions()
     )
@@ -187,15 +187,15 @@ def create_cartesian_action(base, base_cyclic, target):
 
     return action
 
-def get_feedback():
+def get_feedback(args):
     """
     Output: [x, y, z, theta_x, theta_y, theta_z]
     """
 
-    # Parse arguments
-    args = utilities.parseConnectionArguments()
+    # # Parse arguments
+    # args = utilities.parseConnectionArguments()
     
-    # Create connection to the device and get the router
+    # # Create connection to the device and get the router
     with utilities.DeviceConnection.createTcpConnection(args) as router:
 
         # Create required services
@@ -204,38 +204,36 @@ def get_feedback():
 
         feedback = base_cyclic.RefreshFeedback()
 
-    # cartesian_pose.x = feedback.base.tool_pose_x 
-    # cartesian_pose.y = feedback.base.tool_pose_y 
-    # cartesian_pose.z = feedback.base.tool_pose_z 
-    # cartesian_pose.theta_x = feedback.base.tool_pose_theta_x # (degrees)夹爪角度：+往下；-往上
-    # cartesian_pose.theta_y = feedback.base.tool_pose_theta_y # (degrees)夹爪角度：+逆时针；-顺时针
-    # cartesian_pose.theta_z = feedback.base.tool_pose_theta_z # (degrees)夹爪角度：+左转；-右转
+        # cartesian_pose.x = feedback.base.tool_pose_x 
+        # cartesian_pose.y = feedback.base.tool_pose_y 
+        # cartesian_pose.z = feedback.base.tool_pose_z 
+        # cartesian_pose.theta_x = feedback.base.tool_pose_theta_x # (degrees)夹爪角度：+往下；-往上
+        # cartesian_pose.theta_y = feedback.base.tool_pose_theta_y # (degrees)夹爪角度：+逆时针；-顺时针
+        # cartesian_pose.theta_z = feedback.base.tool_pose_theta_z # (degrees)夹爪角度：+左转；-右转
 
-        return ([feedback.base.tool_pose_x, feedback.base.tool_pose_y, feedback.base.tool_pose_z, 
+        return ([feedback.base.tool_pose_x*100-3, feedback.base.tool_pose_y*100-20, feedback.base.tool_pose_z*100, 
         feedback.base.tool_pose_theta_x, feedback.base.tool_pose_theta_y, feedback.base.tool_pose_theta_z])
 
 
-def move_action(action_list):
+def move_action(args, action_list, move_to_home = True):
     """
     Input: action_list
     [x, y, z] or [x, y, z, theta_x, theta_y, theta_z]
     or a list composed of the first two, and the actions will be executed in order.
     """
 
-    # Parse arguments
-    args = utilities.parseConnectionArguments()
+    # # Parse arguments
+    # args = utilities.parseConnectionArguments()
     
-    # Create connection to the device and get the router
+    # # Create connection to the device and get the router
     with utilities.DeviceConnection.createTcpConnection(args) as router:
 
         # Create required services
         base = BaseClient(router)
         base_cyclic = BaseCyclicClient(router)
-
         # Example core
         success = True
-
-        success &= example_move_to_home_position(base)
+        if move_to_home: success &= example_move_to_home_position(base)
         success &= example_cartesian_action_movement_sequence(base, base_cyclic, action_list)
 
         # You can also refer to the 110-Waypoints examples if you want to execute

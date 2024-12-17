@@ -86,13 +86,13 @@ class GripperCommandExample:
             else: # Else, no finger present in answer, end loop
                 return False
 
-def gripper_action(speed):
+def gripper_action(args, speed):
 
-    # Parse arguments
-    parser = argparse.ArgumentParser()
-    args = utilities.parseConnectionArguments(parser)
+    # # Parse arguments
+    # parser = argparse.ArgumentParser()
+    # args = utilities.parseConnectionArguments(parser)
 
-    # Create connection to the device and get the router
+    # # Create connection to the device and get the router
     with utilities.DeviceConnection.createTcpConnection(args) as router:
         success = True
         example = GripperCommandExample(router)
