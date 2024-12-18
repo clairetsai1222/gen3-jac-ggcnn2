@@ -33,7 +33,7 @@ class GripperCommandExample:
         # Create base client using TCP router
         self.base = BaseClient(self.router)
 
-    def ExampleSendGripperCommands(self, speed):
+    def ExampleSendGripperCommands(self, speed, force_when_stop=1):
 
         # Create the GripperCommand we will send
         gripper_command = Base_pb2.GripperCommand()
@@ -75,6 +75,19 @@ class GripperCommandExample:
         finger.value = speed
         self.base.SendGripperCommand(gripper_command)
 
+        # Wait for reported force
+        gripper_request.mode = Base_pb2.GRIPPER_FORCE
+        while True:
+            gripper_measure = self.base.GetMeasuredGripperMovement(gripper_request)
+            if len (gripper_measure.finger):
+                print("Current force is : {0}".format(gripper_measure.finger[0].value))
+                if gripper_measure.finger[0].value > force_when_stop:
+                    # stop
+                    finger.value = 0
+                    self.base.SendGripperCommand(gripper_command)
+                    break
+            else: # Else, no finger present in answer, end loop
+                return False
         # Wait for reported speed to be 0
         gripper_request.mode = Base_pb2.GRIPPER_SPEED
         while True:
