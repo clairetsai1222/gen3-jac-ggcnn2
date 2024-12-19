@@ -88,8 +88,8 @@ def aruco_detect(frame, path=None):
             cv2.putText(frame, str(i+1), (int(c[0]), int(c[1])), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0),
                         1, cv2.LINE_AA)
     
-    # cv2.imshow("frame", frame)
-    # key = cv2.waitKey(10)
+    cv2.imshow("frame", frame)
+    key = cv2.waitKey(10)
     current_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     saved_flag = False
     if path is not None:
