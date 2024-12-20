@@ -27,7 +27,7 @@ from utils.dataset_processing import grasp, grocess_output, take_place_utils
 from utils.calibrate import statical_camera_info
 from utils.d435i_depth_detect import realsense_depth
 from utils.log import save_log
-import utils.action.gen3_move_cartesian as move
+import utils.action.meta_action as ma
 
 # YOLO
 # from utils.yolo import object_detection
@@ -154,7 +154,19 @@ try:
 
         if cv2.waitKey(1) & 0xFF == ord('g'):
             stop_flag = False
-            move.move_action(grasp_point_robot_3d)
+            action = ma.ActionSequence()
+            action.Go_to_home_position()
+            action.move_gripper(0.1)
+            action.move_to(grasp_point_robot_3d)
+            action.move_gripper(-0.1)
+            grasp_point_robot_3d[2] += 10
+            action.move_to(grasp_point_robot_3d)
+            grasp_point_robot_3d[1] += 20
+            action.move_to(grasp_point_robot_3d)
+            action.shake(2)
+            action.dump(100,1)
+            action.put_back()
+            action.Execute()
             save_log.Save(to_save)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):

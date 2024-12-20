@@ -1,5 +1,5 @@
-import gen3_move_cartesiancopy as move
-import gen3_gripper_commandcopy as gripper
+import gen3_move_cartesian as move
+import gen3_move_gripper as gripper
 import time
 import utilities
 
@@ -12,11 +12,13 @@ Args = None
 class ActionSequence:
     def __init__(self):
         """
-        Use execute function to transfer command to robot arm.
+        Use Execute function to transfer command to robot arm.
+        Functions with the first letter being lowercase means it will take effect after "Execute".
+        Functions with the first letter being uppercase means it will take effect immediately.
         """
-        global Router, Base, Base_cyclic
+        global Args
         if Args == None:
-            connect()
+            Connect()
 
         self.action_list=[]
         #[type=0,x,y,z,tx,ty,tz]
@@ -24,7 +26,7 @@ class ActionSequence:
         #[type=2,time]
         #type=0 move; type=1 gripper; type=2 wait
         self.action_sequence_size = 0
-        self.virtual_position = get_position()
+        self.virtual_position = Get_position()
         self.initial_position = self.virtual_position
         self.grasp_position = None
 
@@ -45,7 +47,7 @@ class ActionSequence:
         """
         if speed < 0:
             self.grasp_position = self.virtual_position.copy()
-        if speed > 0:
+        elif speed > 0:
             self.grasp_position = None
         if speed != 0:
             self.action_list.append([1, speed])
@@ -62,25 +64,32 @@ class ActionSequence:
         """
         Intput: degree, and time stayed after dump
         """
-        position = self.virtual_position
+        position = self.virtual_position.copy()
         position[4] += degree
         self.action_list.append([0] + position)
 
         self.wait(wait_time)
 
-        position[4] -= degree
+        position = self.virtual_position.copy()
         self.action_list.append([0] + position)
     
     def shake(self, strength):
         """
-        Intput: degree of the shake action
+        Intput: distance of the shake action
         """
-        position = self.virtual_position
-        position[4] += strength
+        position = self.virtual_position.copy()
+        position[0] += strength/2
+        position[1] += strength/2
         self.action_list.append([0] + position)
-        position[4] -= strength * 2
+        position[0] -= strength
         self.action_list.append([0] + position)
-        position[4] += strength
+        position[1] -= strength
+        self.action_list.append([0] + position)
+        position[0] += strength
+        self.action_list.append([0] + position)
+        position[1] += strength
+        self.action_list.append([0] + position)
+        position = self.virtual_position.copy()
         self.action_list.append([0] + position)
         
     def put_back(self):
@@ -94,10 +103,10 @@ class ActionSequence:
     
     # misc
 
-    def get_virtual_position(self):
+    def Get_virtual_position(self):
         return self.virtual_position
 
-    def execute(self):
+    def Execute(self):
         print("Transfer to move_action ...")
         action_list_temp = []
         error = 0
@@ -115,6 +124,7 @@ class ActionSequence:
                 if action_list_temp:
                     error |= move.move_action(Args, action_list_temp, False)
                     action_list_temp = []
+                print("Waiting...")
                 time.sleep(action[0])
             else:
                 print("Action type is wrong!")
@@ -123,11 +133,25 @@ class ActionSequence:
         action_list_temp.clear()
         return error
     
-def get_position():
+    def Go_to_home_position(self):
+        Go_to_home_position()
+    
+    def Get_position(self):
+        return Get_position()
+    
+def Go_to_home_position():
+    global Args
     if Args == None:
-        connect()
+        Connect()
+    move.move_action(Args, None, True)
+
+def Get_position():
+    global Args
+    if Args == None:
+        Connect()
     return move.get_feedback(Args)
 
-def connect():
+def Connect():
     global Args
-    Args = utilities.parseConnectionArguments()
+    if Args == None:
+        Args = utilities.parseConnectionArguments()

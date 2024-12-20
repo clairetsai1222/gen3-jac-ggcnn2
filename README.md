@@ -1,3 +1,4 @@
+# Dino版本的视觉抓取库
 ## 建构步骤
 
 1. 训练模型：(应该已经完成)使用train_ggcnn2.py脚本训练模型，训练好的模型会保存在./output/models文件夹下
@@ -47,13 +48,14 @@ CUDA 12.4
 ```
 conda install pytorch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 pytorch-cuda=12.4 -c pytorch -c nvidia
 ```
-#### 3. 安装其他依赖项
-```
-pip install -r requirements.txt
-```
-#### 4. 安装 Realsense d435i api
+#### 3. 安装 Realsense d435i api
 ```
 pip install pyrealsense2
+```
+#### 4. 安装其他依赖项
+```
+cd Requirements
+pip install -r requirements.txt
 ```
 #### 5. 安装 Gen3 python api
 ```
@@ -62,6 +64,7 @@ python3 -m pip install kortex_api-2.6.0.post3-py3-none-any.whl
 #### 6. 安装 quaternion
 可能需要增加镜像源：
 ```
+cd ..
 conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
 ```
 ```
