@@ -61,14 +61,10 @@ pip install -r requirements.txt
 ```
 python3 -m pip install kortex_api-2.6.0.post3-py3-none-any.whl
 ```
-#### 6. 安装 quaternion
-可能需要增加镜像源：
+#### 6. 安装 quaternions
 ```
 cd ..
-conda config --add channels https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/
-```
-```
-conda install -c conda-forge quaternion
+pip install quaternions
 ```
 
 ### Grounding Dino部分:

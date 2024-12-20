@@ -1,7 +1,11 @@
-import gen3_move_cartesian as move
-import gen3_move_gripper as gripper
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import action.gen3_move_cartesian as move
+import action.gen3_move_gripper as gripper
+import action.gen3_move_gripper_low as gripperl
 import time
-import utilities
+import action.utilities as utilities
 
 from kortex_api.autogen.client_stubs.BaseClientRpc import BaseClient
 from kortex_api.autogen.client_stubs.BaseCyclicClientRpc import BaseCyclicClient
@@ -26,7 +30,7 @@ class ActionSequence:
         #[type=2,time]
         #type=0 move; type=1 gripper; type=2 wait
         self.action_sequence_size = 0
-        self.virtual_position = Get_position()
+        self.virtual_position,self.initial_gripper_position = Get_position()
         self.initial_position = self.virtual_position
         self.grasp_position = None
 
@@ -41,16 +45,16 @@ class ActionSequence:
         for i, p in enumerate(target):
             self.virtual_position[i] = p
 
-    def move_gripper(self, speed): # close: speed < 0
+    def move_gripper(self, position): # close: position = 100
         """
         Intput: speed<0: close; speed>0 open
         """
-        if speed < 0:
-            self.grasp_position = self.virtual_position.copy()
-        elif speed > 0:
-            self.grasp_position = None
-        if speed != 0:
-            self.action_list.append([1, speed])
+        # if speed < 0:
+        #     self.grasp_position = self.virtual_position.copy()
+        # elif speed > 0:
+        #     self.grasp_position = None
+        # if speed != 0:
+        self.action_list.append([1, position])
 
     def wait(self, time):
         """
@@ -119,7 +123,7 @@ class ActionSequence:
                 if action_list_temp:
                     error |= move.move_action(Args, action_list_temp, False)
                     action_list_temp = []
-                error |= gripper.gripper_action(Args, action[0])
+                error |= gripperl.gripper_action(Args, action[0])
             elif type == 2:
                 if action_list_temp:
                     error |= move.move_action(Args, action_list_temp, False)
@@ -149,9 +153,10 @@ def Get_position():
     global Args
     if Args == None:
         Connect()
-    return move.get_feedback(Args)
+    return move.get_feedback(Args), gripperl.get_feedback(Args)
 
 def Connect():
     global Args
     if Args == None:
         Args = utilities.parseConnectionArguments()
+        print(Args)

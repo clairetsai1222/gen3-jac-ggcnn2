@@ -25,7 +25,7 @@ from kortex_api.autogen.messages import Base_pb2, BaseCyclic_pb2, Common_pb2
 
 # Import the utilities helper module
 #sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-import utilities
+import action.utilities as utilities
 
 # Maximum allowed waiting time during actions (in seconds)
 TIMEOUT_DURATION = 20

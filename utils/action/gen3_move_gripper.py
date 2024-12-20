@@ -22,7 +22,7 @@ from kortex_api.autogen.messages import Base_pb2
 # Import the utilities helper module
 import argparse
 #sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-import utilities
+import action.utilities as utilities
 
 class GripperCommandExample:
     def __init__(self, router, proportional_gain = 2.0):
@@ -76,24 +76,25 @@ class GripperCommandExample:
         self.base.SendGripperCommand(gripper_command)
 
         # Wait for reported force
-        gripper_request.mode = Base_pb2.GRIPPER_FORCE
-        while True:
-            gripper_measure = self.base.GetMeasuredGripperMovement(gripper_request)
-            if len (gripper_measure.finger):
-                print("Current force is : {0}".format(gripper_measure.finger[0].value))
-                if gripper_measure.finger[0].value > force_when_stop:
-                    # stop
-                    finger.value = 0
-                    self.base.SendGripperCommand(gripper_command)
-                    break
-            else: # Else, no finger present in answer, end loop
-                return False
+        # gripper_request.mode = Base_pb2.GRIPPER_FORCE
+        # while True:
+        #     gripper_measure = self.base.GetMeasuredGripperMovement(gripper_request)
+        #     if len (gripper_measure.finger):
+        #         print("Current force is : {0}".format(gripper_measure.finger[0].value))
+        #         if gripper_measure.finger[0].value > force_when_stop:
+        #             # stop
+        #             finger.value = 0
+        #             self.base.SendGripperCommand(gripper_command)
+        #             break
+        #     else: # Else, no finger present in answer, end loop
+        #         return False
         # Wait for reported speed to be 0
         gripper_request.mode = Base_pb2.GRIPPER_SPEED
         while True:
             gripper_measure = self.base.GetMeasuredGripperMovement(gripper_request)
             if len (gripper_measure.finger):
-                print("Current speed is : {0}".format(gripper_measure.finger[0].value))
+                print(gripper_measure)
+                #print("Current speed is : {0}".format(gripper_measure.finger[0].value))
                 if gripper_measure.finger[0].value == 0.0:
                     return True
             else: # Else, no finger present in answer, end loop
