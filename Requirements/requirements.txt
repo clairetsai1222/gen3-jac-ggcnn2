@@ -11,6 +11,7 @@ pyyaml
 imagecodecs
 pyrealsense2
 numpy==1.24.3
+Pillow
 
 
 
