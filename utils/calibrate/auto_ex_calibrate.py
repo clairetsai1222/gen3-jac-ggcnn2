@@ -163,9 +163,11 @@ def get_all_files(path, extension="*.png"):
 if __name__ == '__main__':
     #图片所在路径
     path = f'./debug_calibration/'
+    path2 = path
+    # path2 = f'./ex_aruco_calibration1029/'
     num = input("saving numbers...\n")
     batch_save_img_and_base_pose(int(num), path=path)
-    R_camera_to_base,T_camera_to_base = calibrate(path)
+    R_camera_to_base,T_camera_to_base = calibrate(path2)
     print(T_camera_to_base)
     Ts_camera_to_base = np.vstack((np.hstack((R_camera_to_base,T_camera_to_base)),np.array([0,0,0,1])))
     #存储标定结果矩阵

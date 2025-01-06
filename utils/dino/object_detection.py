@@ -10,8 +10,8 @@ from torchvision.ops import box_convert
 
 import sys
 sys.path.append(".../GroundingDINO")
-from groundingdino.util.inference import load_model, load_image, predict, annotate
-import groundingdino.datasets.transforms as T
+from GroundingDINO.groundingdino.util.inference import load_model, load_image, predict, annotate
+import GroundingDINO.groundingdino.datasets.transforms as T
 
 class ObjectDetection():
     def __init__(self, detect_object, color_image, detpth_image, color_intrinsics):

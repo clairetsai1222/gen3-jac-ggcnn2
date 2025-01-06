@@ -65,13 +65,15 @@ try:
             continue
 
         # preprocess
-        print(depth_image)
+        # print(depth_image)
         # repair
         repaired_depth_image = repairPipeline.inference(np.array(color_image), np.array(depth_image))
         # post process
-        repaired_depth_scaled_img = cv2.applyColorMap((repaired_depth_image/10).astype(np.uint8), cv2.COLORMAP_TURBO)
-        depth_scaled_img = cv2.applyColorMap((depth_image/10).astype(np.uint8), cv2.COLORMAP_TURBO)
+        factor = 7
+        repaired_depth_scaled_img = cv2.applyColorMap((repaired_depth_image/factor).astype(np.uint8), cv2.COLORMAP_JET)
+        depth_scaled_img = cv2.applyColorMap((depth_image/factor).astype(np.uint8), cv2.COLORMAP_JET)
         # 调整深度图像和彩色图像尺寸
+        # print(repaired_depth_image)
         resized_depth_image, resized_color_image = take_place_utils.resize_images(repaired_depth_image, color_image, (704, 1280))
         # print(resized_color_image.size())
         ori_resized_depth_image = resized_depth_image.copy()
@@ -145,10 +147,10 @@ try:
                 # TS_eye2base = TS_eye2base['arr_0']
 
                 TS_eye2base = np.array([
-                    [0.906352, 0.380620, 0.183452, 509.913],
-                    [-4.2, 0.85893, 0.2929547, 37.0053],
-                    [0.046069, 0.342570, 0.938361, 30.5495],
-                    [0.000000, 0.000000, 0.000000, 1.000000]
+                    [9.973575258016956768e-01, 4.452985062401254579e-02, -5.740259689354709066e-02, 3.361887444730505649e+03],
+                    [-4.224477132857497319e-02, 9.982891183610328456e-01, 4.042543082452214331e-02, -4.528185238694334771e+02],
+                    [5.910452624052021237e-02, -3.789364808717873845e-02, 9.975323184802228349e-01, 1.299203405789796761e+01],
+                    [0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 1.000000000000000000e+00]
                 ])
 
                 grasp_point_robot = TS_eye2base @ grasp_point_homogeneous
@@ -156,19 +158,21 @@ try:
                 # grasp_point_robot_3d = grasp_point_robot[:3] 
                 grasp_point_robot_3d = [grasp_point_robot[2], grasp_point_robot[0], grasp_point_robot[1]]
                 print("3D arm base frame:", grasp_point_robot_3d)
+                # print(object_depth_image)
                 to_save = {\
+                    "origina_color_image": Image.fromarray(color_image).convert("RGB"),\
                     "original_depth_image": Image.fromarray(depth_scaled_img).convert("RGB"),\
                     "repaired_depth_image": Image.fromarray(repaired_depth_scaled_img).convert("RGB"),\
                     "grasp_point_3d": grasp_point_robot_3d,\
                     "object_color_image": Image.fromarray(object_color_image).convert("RGB"),\
-                    "object_depth_image": Image.fromarray(object_depth_image).convert("RGB")\
+                    "object_depth_image": Image.fromarray(object_depth_image/factor).convert("RGB")\
                         }
                 # 等待1秒
                 time.sleep(3)
 
-        if cv2.waitKey(1) & 0xFF == ord('g'):
+        if cv2.waitKey(0) & 0xFF == ord('g'):
             stop_flag = False
-            if False:
+            if True:
                 action = ma.ActionSequence()
                 action.Go_to_home_position()
                 action.move_gripper(0.1)

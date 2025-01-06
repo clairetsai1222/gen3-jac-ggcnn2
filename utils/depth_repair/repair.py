@@ -4,21 +4,19 @@ import cv2 as cv
 import numpy as np
 import PIL.Image as Image
 import torch.nn.functional as F
-
-from torchvision import transforms
-
 import sys
 sys.path.append(".../SwinDRNet")
-
-from networks.SwinDRNet import SwinDRNet
-from config import get_config
+from torchvision import transforms
+from SwinDRNet.networks.SwinDRNet import SwinDRNet
+from SwinDRNet.config import get_config
 
 
 class SwinDRNetPipeline():
     def __init__(self, model_path):
         self.args = self.parser_init()
         self.config = get_config(self.args)
-        self.target_size = (4*self.args.img_size, 4*self.args.img_size)
+        factor = 1
+        self.target_size = (factor*self.args.img_size, factor*self.args.img_size)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = SwinDRNet(self.config, img_size=self.args.img_size, num_classes=self.args.num_classes).cuda()
         msg = self.model.load_state_dict(torch.load(model_path)['model_state_dict'])
@@ -46,7 +44,7 @@ class SwinDRNetPipeline():
         _depth = _depth.squeeze(0)
         _depth = transforms.ToTensor()(np.uint8(_depth))
         _depth = _depth.unsqueeze(0) 
-        transforms.ToPILImage()(_depth.squeeze(0)).show()
+        #transforms.ToPILImage()(_depth.squeeze(0)).show()
         # to device
         _rgb = _rgb.to(self.device)
         _depth = _depth.to(self.device)
@@ -103,7 +101,7 @@ class SwinDRNetPipeline():
                             default=224, help='input patch size of network input')
         parser.add_argument('--seed', type=int,
                             default=1234, help='random seed')
-        parser.add_argument('--cfg', type=str, default="configs/swin_tiny_patch4_window7_224_lite.yaml", metavar="FILE", help='path to config file', )
+        parser.add_argument('--cfg', type=str, default="SwinDRNet/configs/swin_tiny_patch4_window7_224_lite.yaml", metavar="FILE", help='path to config file', )
         parser.add_argument(
                             "--opts",
                             help="Modify config options by adding 'KEY VALUE' pairs. ",
