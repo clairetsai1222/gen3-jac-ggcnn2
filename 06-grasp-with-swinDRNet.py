@@ -69,7 +69,8 @@ try:
         # repair
         repaired_depth_image = repairPipeline.inference(np.array(color_image), np.array(depth_image))
         # post process
-
+        repaired_depth_scaled_img = cv2.applyColorMap((repaired_depth_image/10).astype(np.uint8), cv2.COLORMAP_TURBO)
+        depth_scaled_img = cv2.applyColorMap((depth_image/10).astype(np.uint8), cv2.COLORMAP_TURBO)
         # 调整深度图像和彩色图像尺寸
         resized_depth_image, resized_color_image = take_place_utils.resize_images(repaired_depth_image, color_image, (704, 1280))
         # print(resized_color_image.size())
@@ -155,26 +156,32 @@ try:
                 # grasp_point_robot_3d = grasp_point_robot[:3] 
                 grasp_point_robot_3d = [grasp_point_robot[2], grasp_point_robot[0], grasp_point_robot[1]]
                 print("3D arm base frame:", grasp_point_robot_3d)
-                to_save = {"grasp_point_3d": grasp_point_robot_3d, "object_color_image": Image.fromarray(object_color_image).convert("RGB"), "object_depth_image": Image.fromarray(object_depth_image).convert("RGB")}
-
+                to_save = {\
+                    "original_depth_image": Image.fromarray(depth_scaled_img).convert("RGB"),\
+                    "repaired_depth_image": Image.fromarray(repaired_depth_scaled_img).convert("RGB"),\
+                    "grasp_point_3d": grasp_point_robot_3d,\
+                    "object_color_image": Image.fromarray(object_color_image).convert("RGB"),\
+                    "object_depth_image": Image.fromarray(object_depth_image).convert("RGB")\
+                        }
                 # 等待1秒
                 time.sleep(3)
 
         if cv2.waitKey(1) & 0xFF == ord('g'):
             stop_flag = False
-            action = ma.ActionSequence()
-            action.Go_to_home_position()
-            action.move_gripper(0.1)
-            action.move_to(grasp_point_robot_3d)
-            action.move_gripper(-0.1)
-            grasp_point_robot_3d[2] += 10
-            action.move_to(grasp_point_robot_3d)
-            grasp_point_robot_3d[1] += 20
-            action.move_to(grasp_point_robot_3d)
-            action.shake(2)
-            action.dump(100,1)
-            action.put_back()
-            action.Execute()
+            if False:
+                action = ma.ActionSequence()
+                action.Go_to_home_position()
+                action.move_gripper(0.1)
+                action.move_to(grasp_point_robot_3d)
+                action.move_gripper(-0.1)
+                grasp_point_robot_3d[2] += 10
+                action.move_to(grasp_point_robot_3d)
+                grasp_point_robot_3d[1] += 20
+                action.move_to(grasp_point_robot_3d)
+                action.shake(2)
+                action.dump(100,1)
+                action.put_back()
+                action.Execute()
             save_log.Save(to_save)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
