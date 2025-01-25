@@ -31,7 +31,7 @@ class SwinDRNetPipeline():
         h,w,_ = rgb.shape
         
         # preprocess RGB
-        _rgb = cv.resize(rgb, self.target_size ,interpolation=cv.INTER_NEAREST)
+        _rgb = cv.resize(rgb, target_size ,interpolation=cv.INTER_NEAREST)
         _rgb = transforms.ToTensor()(_rgb)
         _rgb = _rgb.unsqueeze(0)
         #transforms.ToPILImage()(_rgb.squeeze(0)).show()
@@ -50,9 +50,9 @@ class SwinDRNetPipeline():
         _depth = _depth.to(self.device)
         
         #print('='*20)
-        # print(_depth)
+        #print(_depth)
         #Image.fromarray(np.array(_rgb.cpu()).squeeze(), 'RGB').show()
-
+        
         # forward
         with torch.no_grad():  
             pred_ds, pred_ds_initial, confidence_sim_ds, confidence_initial = self.model(_rgb, _depth)
@@ -66,6 +66,8 @@ class SwinDRNetPipeline():
                               + depth * cv.resize(np.array(confidence_sim_ds.cpu()).squeeze(0).squeeze(0), output_size)
         #return cv.resize(np.array(confidence_initial.cpu()).squeeze(0).squeeze(0), output_size)*2550
         #return output_depth
+        print(depth)
+        print(output_depth)
         return output_depth_mapped
     
     def parser_init(self):

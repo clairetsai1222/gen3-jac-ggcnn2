@@ -47,8 +47,10 @@ class DepthCamera:
         
         filtered_depth_image = np.asanyarray(filtered_depth_frame.get_data())
         color_image = np.asanyarray(self.color_frame.get_data())
+        depth_image = np.asanyarray(self.depth_frame.get_data())
 
 
+        return True, depth_image, color_image, self.depth_intrinsic, self.color_intrinsic
         return True, filtered_depth_image, color_image, self.depth_intrinsic, self.color_intrinsic
 
     def release(self):

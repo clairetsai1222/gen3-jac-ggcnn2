@@ -59,9 +59,9 @@ try:
             continue
 
         # repair
-        repaired_depth_image = repairPipeline.inference(np.array(color_image), np.array(depth_image), 2)
+        repaired_depth_image = repairPipeline.inference(np.array(color_image), np.array(depth_image), 1)
         # post process
-        factor = 7
+        factor = 5
         repaired_depth_scaled_img = cv2.applyColorMap((repaired_depth_image/factor).astype(np.uint8), cv2.COLORMAP_JET)
         depth_scaled_img = cv2.applyColorMap((depth_image/factor).astype(np.uint8), cv2.COLORMAP_JET)
         cv2.imshow('color_image', color_image)
