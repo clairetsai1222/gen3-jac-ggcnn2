@@ -19,12 +19,13 @@ class SwinDRNetPipeline():
         print("self trained swin unet", msg)
         self.model.eval()
 
-    def inference(self, rgb: np.ndarray, depth: np.ndarray):
+    def inference(self, rgb: np.ndarray, depth: np.ndarray, target_size_factor = 1):
         '''
         rgb should be in RGB and is np.array;
         depth should be in one channel(mm) and is np.array.
+        target size factor can be changed for better result.
         '''
-        target_size = (4*self.args.img_size, 4*self.args.img_size)
+        target_size = (target_size_factor*self.args.img_size, target_size_factor*self.args.img_size)
         h,w,_ = rgb.shape
         
         # preprocess RGB
@@ -40,8 +41,8 @@ class SwinDRNetPipeline():
         _depth[_depth <= 0] = 0.0
         _depth = _depth.squeeze(0)
         _depth = transforms.ToTensor()(np.uint8(_depth))
-        _depth = _depth.unsqueeze(0) 
-        transforms.ToPILImage()(_depth.squeeze(0)).show()
+        _depth = _depth.unsqueeze(0)
+        # transforms.ToPILImage()(_depth.squeeze(0)).show()
         # to device
         _rgb = _rgb.to(self.device)
         _depth = _depth.to(self.device)
@@ -56,9 +57,14 @@ class SwinDRNetPipeline():
             if  pred_ds.shape[2:] != (h,w):
                 # upsampling to origin rgb's resolution
                 pred_ds = F.interpolate(pred_ds,(h,w),mode='bilinear')
-            outputs_depth = np.array(pred_ds.cpu()).squeeze(0).squeeze(0)*2550
-
-        return outputs_depth
+            output_depth = np.array(pred_ds.cpu()).squeeze(0).squeeze(0)*2550
+        # confidence map
+        output_size = (output_depth.shape[1], output_depth.shape[0])
+        output_depth_mapped = output_depth * cv.resize(np.array(confidence_initial.cpu()).squeeze(0).squeeze(0), output_size)\
+                              + depth * cv.resize(np.array(confidence_sim_ds.cpu()).squeeze(0).squeeze(0), output_size)
+        #return cv.resize(np.array(confidence_initial.cpu()).squeeze(0).squeeze(0), output_size)*2550
+        #return output_depth
+        return output_depth_mapped
     
     def parser_init(self):
         parser = argparse.ArgumentParser()
