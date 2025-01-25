@@ -19,7 +19,7 @@ import numpy as np
 import cv2
 # import torch
 # import datetime
-# import time
+import time
 
 # from models.ggcnn2 import GGCNN2
 from PIL import Image
@@ -59,7 +59,7 @@ try:
             continue
 
         # repair
-        repaired_depth_image = repairPipeline.inference(np.array(color_image), np.array(depth_image))
+        repaired_depth_image = repairPipeline.inference(np.array(color_image), np.array(depth_image), 2)
         # post process
         factor = 7
         repaired_depth_scaled_img = cv2.applyColorMap((repaired_depth_image/factor).astype(np.uint8), cv2.COLORMAP_JET)
@@ -70,12 +70,13 @@ try:
                     "original_depth_image": Image.fromarray(depth_scaled_img).convert("RGB"),\
                     "repaired_depth_image": Image.fromarray(repaired_depth_scaled_img).convert("RGB"),\
                 }
+        time.sleep(3)
 
         if cv2.waitKey(0) & 0xFF == ord('g'):
             stop_flag = False
             save_log.Save(to_save)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(0) & 0xFF == ord('q'):
             stop_flag = False
 
 except Exception as e:
