@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import sys
 sys.path.append(".../SwinDRNet")
 from torchvision import transforms
+from scipy.ndimage import zoom
 from SwinDRNet.networks.SwinDRNet import SwinDRNet
 from SwinDRNet.config import get_config
 
@@ -21,36 +22,43 @@ class SwinDRNetPipeline():
         print("self trained swin unet", msg)
         self.model.eval()
 
-    def inference(self, rgb: np.ndarray, depth: np.ndarray, target_size_factor = 1):
+    def inference(self, rgb: np.ndarray, depth: np.ndarray, target_size_factor = 1,  depth_zoom_factor = 1000):
         '''
         rgb should be in RGB and is np.array;
         depth should be in one channel(mm) and is np.array.
         target size factor can be changed for better result.
+        depth zoom factor can adjust the value of distance for better result. 
         '''
-        target_size = (target_size_factor*self.args.img_size, target_size_factor*self.args.img_size)
+        #target_size = (target_size_factor*self.args.img_size, target_size_factor*self.args.img_size)
         h,w,_ = rgb.shape
+        rgb_zoom = (target_size_factor*self.args.img_size/rgb.shape[0], target_size_factor*self.args.img_size/rgb.shape[1],1)
+        depth_zoom = (target_size_factor*self.args.img_size/depth.shape[0], target_size_factor*self.args.img_size/depth.shape[1])
         
         # preprocess RGB
-        _rgb = cv.resize(rgb, target_size ,interpolation=cv.INTER_NEAREST)
+        _rgb = rgb.astype(np.float32)/255
+        #_rgb = cv.resize(rgb, target_size ,interpolation=cv.INTER_NEAREST)
+        _rgb = zoom(_rgb,rgb_zoom).astype(np.float32)
         _rgb = transforms.ToTensor()(_rgb)
         _rgb = _rgb.unsqueeze(0)
+        # print(_rgb)
         #transforms.ToPILImage()(_rgb.squeeze(0)).show()
 
         # preprocess depth
-        _depth = depth/10
-        _depth = cv.resize(_depth, target_size ,interpolation=cv.INTER_NEAREST)
+        _depth = depth.astype(np.float32)/depth_zoom_factor
+        _depth = zoom(_depth,depth_zoom).astype(np.float32)
+        #_depth = cv.resize(_depth, target_size ,interpolation=cv.INTER_NEAREST)
         _depth = _depth[np.newaxis, ...] 
         _depth[_depth <= 0] = 0.0
         _depth = _depth.squeeze(0)
-        _depth = transforms.ToTensor()(np.uint8(_depth))
-        _depth = _depth.unsqueeze(0) 
+        _depth = transforms.ToTensor()(_depth)
+        _depth = _depth.unsqueeze(0)
         #transforms.ToPILImage()(_depth.squeeze(0)).show()
         # to device
         _rgb = _rgb.to(self.device)
         _depth = _depth.to(self.device)
         
         #print('='*20)
-        #print(_depth)
+        print(_depth)
         #Image.fromarray(np.array(_rgb.cpu()).squeeze(), 'RGB').show()
         
         # forward
@@ -59,11 +67,17 @@ class SwinDRNetPipeline():
             if  pred_ds.shape[2:] != (h,w):
                 # upsampling to origin rgb's resolution
                 pred_ds = F.interpolate(pred_ds,(h,w),mode='bilinear')
-            output_depth = np.array(pred_ds.cpu()).squeeze(0).squeeze(0)*2550
+            output_depth = np.array(pred_ds.cpu()).squeeze(0).squeeze(0)*depth_zoom_factor
         # confidence map
-        output_size = (output_depth.shape[1], output_depth.shape[0])
-        output_depth_mapped = output_depth * cv.resize(np.array(confidence_initial.cpu()).squeeze(0).squeeze(0), output_size)\
-                              + depth * cv.resize(np.array(confidence_sim_ds.cpu()).squeeze(0).squeeze(0), output_size)
+        confidence_map_ini = np.array(confidence_initial.cpu()).squeeze(0).squeeze(0)
+        confidence_map_ds = np.array(confidence_sim_ds.cpu()).squeeze(0).squeeze(0)
+        # output_size = (output_depth.shape[1], output_depth.shape[0])
+        ini_zoom = (output_depth.shape[0]/confidence_map_ini.shape[0], output_depth.shape[1]/confidence_map_ini.shape[1])
+        ds_zoom = (depth.shape[0]/confidence_map_ds.shape[0], depth.shape[1]/confidence_map_ds.shape[1])
+        output_depth_mapped = output_depth * zoom(confidence_map_ini, ini_zoom)\
+                              + depth * zoom(confidence_map_ds, ds_zoom)
+        # output_depth_mapped = output_depth * cv.resize(np.array(confidence_initial.cpu()).squeeze(0).squeeze(0), output_size)\
+        #                       + depth * cv.resize(np.array(confidence_sim_ds.cpu()).squeeze(0).squeeze(0), output_size)
         #return cv.resize(np.array(confidence_initial.cpu()).squeeze(0).squeeze(0), output_size)*2550
         #return output_depth
         print(depth)
