@@ -63,6 +63,14 @@ with open("utils/calibrate/calibration.txt", 'r') as f:
         row = list(map(float, line.strip().split()))
         TS_eye2base.append(row)
 TS_eye2base = np.array(TS_eye2base)
+if(1==0):
+    TS_eye2base = np.array([
+                    [0.893439, 0.401507, -0.201394, -60.01748],
+                    [-0.443645, 0.858955, -0.255686, 0.907637],
+                    [0.070328, 0.317787, 0.945550, 0.669926],
+                    [0.000000, 0.000000, 0.000000, 1.000000]
+                ])
+    
 
 stop_flag = True
 try:
@@ -182,17 +190,20 @@ try:
             stop_flag = False
             if True:
                 action = ma.ActionSequence()
-                action.Go_to_home_position()
-                action.move_gripper(0.1)
+                print(action.Get_position())
+                print(grasp_point_robot_3d)
+                #action.Go_to_home_position()
+                
+                action.move_gripper(0)
                 action.move_to(grasp_point_robot_3d)
-                action.move_gripper(-0.1)
+                action.move_gripper(100)
                 grasp_point_robot_3d[2] += 10
                 action.move_to(grasp_point_robot_3d)
                 grasp_point_robot_3d[1] += 20
                 action.move_to(grasp_point_robot_3d)
                 action.shake(2)
                 action.dump(100,1)
-                action.put_back()
+                #action.put_back()
                 action.Execute()
             save_log.Save(to_save)
 

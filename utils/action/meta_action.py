@@ -47,7 +47,7 @@ class ActionSequence:
 
     def move_gripper(self, position): # close: position = 100
         """
-        Intput: speed<0: close; speed>0 open
+        close: position = 100, open: position = 0
         """
         # if speed < 0:
         #     self.grasp_position = self.virtual_position.copy()

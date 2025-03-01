@@ -58,7 +58,8 @@ class SwinDRNetPipeline():
         _depth = _depth.to(self.device)
         
         #print('='*20)
-        print(_depth)
+        # print(depth)
+        # print(_depth)
         #Image.fromarray(np.array(_rgb.cpu()).squeeze(), 'RGB').show()
         
         # forward
