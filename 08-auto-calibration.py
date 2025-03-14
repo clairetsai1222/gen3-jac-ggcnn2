@@ -40,6 +40,7 @@ from utils.depth_repair import repair
 
 # 加载相机内参
 _, depth_scale, color_coefficients = statical_camera_info.get_camera_intrinsics()
+print(statical_camera_info.get_camera_intrinsics())
 
 # 创建RealSense管道
 # Initialize Camera Intel Realsense
