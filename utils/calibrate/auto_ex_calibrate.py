@@ -64,6 +64,7 @@ def get_Ts_board_in_camera(img_name):
         print("img read error!")
         return False
     w,h,c = img.shape
+    dist = np.array([0.226317, -1.21478, 0.00170689, -0.000334551, 1.9892])
     # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx, dist, (w, h), 0, (w, h))  # 自由比例参数
     # img = cv2.undistort(img, mtx, dist, None, newcameramtx)
     R_board_in_camera,T_board_in_camera = camera_calibrate(grid_size,offset,img)
