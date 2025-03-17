@@ -141,23 +141,15 @@ def camera_calibrate(grid_size,distance,frame,size = (7,5)):
     #检测图片中标定板的2D point
     corners_2d, _, _, _ = aruco_detect(frame)
 
-    print("corners_2d: \n")
-    print(corners_2d)
-
     #转为统一数据类型
     point_3d = [point_3d.astype('float32')]
     corners_2d = [corners_2d.astype('float32')]
-    
-    print("point_3d: \n")
-    print(point_3d)
 
     if (np.array(point_3d).shape[1] != np.array(corners_2d).shape[1]):
         return None, None
 
     # 利用3D和2D对应点计算变换矩阵
     (success, rotation_vector, translation_v) = cv2.solvePnP(np.array(point_3d), np.array(corners_2d), intrinsic_matrix, coefficients,flags=cv2.SOLVEPNP_ITERATIVE)
-    print("rotation_vector: \n")
-    print(rotation_vector)
     rotation_v = cv2.Rodrigues(rotation_vector)[0]
 
     return rotation_v,translation_v

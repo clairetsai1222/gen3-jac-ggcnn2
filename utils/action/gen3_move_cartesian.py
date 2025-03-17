@@ -166,9 +166,9 @@ def create_cartesian_action(base, base_cyclic, target):
 
     cartesian_pose = action.reach_pose.target_pose
 
-    cartesian_pose.x = (target[0]+3)     *0.01     # (meters) 
-    cartesian_pose.y = (target[1]+20)     *0.01   # (meters)
-    cartesian_pose.z = target[2]     *0.01   # (meters)
+    cartesian_pose.x = (target[0]+30)     *0.001     # (meters) 
+    cartesian_pose.y = (target[1]+200)     *0.001   # (meters)
+    cartesian_pose.z = target[2]     *0.001   # (meters)
     
     if len(target) == 6:
         cartesian_pose.theta_x = target[3] # (degrees)夹爪角度：+往下；-往上
