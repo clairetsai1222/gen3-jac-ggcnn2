@@ -166,9 +166,9 @@ def create_cartesian_action(base, base_cyclic, target):
 
     cartesian_pose = action.reach_pose.target_pose
 
-    cartesian_pose.x = (target[0]+30)     *0.001     # (meters) 
-    cartesian_pose.y = (target[1]+200)     *0.001   # (meters)
-    cartesian_pose.z = target[2]     *0.001   # (meters)
+    cartesian_pose.x = (target[0])*0.001     # (meters) 
+    cartesian_pose.y = (target[1])*0.001   # (meters)
+    cartesian_pose.z = (target[2])*0.001   # (meters)
     
     if len(target) == 6:
         cartesian_pose.theta_x = target[3] # (degrees)夹爪角度：+往下；-往上
@@ -212,7 +212,7 @@ def get_feedback(args):
         # cartesian_pose.theta_y = feedback.base.tool_pose_theta_y # (degrees)夹爪角度：+逆时针；-顺时针
         # cartesian_pose.theta_z = feedback.base.tool_pose_theta_z # (degrees)夹爪角度：+左转；-右转
 
-        return ([feedback.base.tool_pose_x*100-3, feedback.base.tool_pose_y*100-20, feedback.base.tool_pose_z*100, 
+        return ([feedback.base.tool_pose_x*1000, feedback.base.tool_pose_y*1000, feedback.base.tool_pose_z*1000, 
         feedback.base.tool_pose_theta_x, feedback.base.tool_pose_theta_y, feedback.base.tool_pose_theta_z])
 
 

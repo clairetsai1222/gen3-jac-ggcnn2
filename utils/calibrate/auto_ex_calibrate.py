@@ -134,6 +134,9 @@ def calibrate(path):
     imgs_name = glob.glob(os.path.join(path, "*.png"))
     files_name = glob.glob(os.path.join(path, "*.txt"))
 
+    imgs_name = sorted(imgs_name, key = os.path.getctime)
+    files_name = sorted(files_name, key = os.path.getctime)
+
     Ts_hand_in_base_all = []
     Ts_board_in_camera_all = []
     totle_num = 0

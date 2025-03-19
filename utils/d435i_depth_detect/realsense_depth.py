@@ -70,6 +70,7 @@ class DepthCamera:
         u, v = grasp_point_2d[1], grasp_point_2d[0]
         # 获取深度图像中对应点的深度值
         spot_depth = depth_image[int(u), int(v)] * depth_scale
+        print("spot_depth: "+str(spot_depth))
         
         spot3D = rs.rs2_deproject_pixel_to_point(self.depth_intrinsic, [u, v], spot_depth)
         
