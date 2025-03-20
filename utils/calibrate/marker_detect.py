@@ -149,6 +149,9 @@ def camera_calibrate(grid_size,distance,frame,size = (7,5)):
         return None, None
 
     # 利用3D和2D对应点计算变换矩阵
+    print(point_3d)
+    print("\n")
+    print(corners_2d)
     (success, rotation_vector, translation_v) = cv2.solvePnP(np.array(point_3d), np.array(corners_2d), intrinsic_matrix, coefficients,flags=cv2.SOLVEPNP_ITERATIVE)
     rotation_v = cv2.Rodrigues(rotation_vector)[0]
 

@@ -168,7 +168,7 @@ if __name__ == '__main__':
     #图片所在路径
     path = f'./debug_calibration/'
     path2 = path
-    #path2 = f'./ex_aruco_calibration0315/'
+    path2 = f'./ex_aruco_calibration0926/'
     # num = input("saving numbers...\n")
     # batch_save_img_and_base_pose(int(num), path=path)
     R_camera_to_base,T_camera_to_base = calibrate(path2)
