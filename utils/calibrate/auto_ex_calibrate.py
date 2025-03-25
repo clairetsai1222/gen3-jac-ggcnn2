@@ -11,8 +11,8 @@ import realsense_depth
 import gen3_gripper_pose 
 
 #设置标定板尺寸信息 单位（mm）
-grid_size = 26.8
-offset = 2.7
+grid_size = 25.5
+offset = 2.4
 
 # 设置相机参数
 

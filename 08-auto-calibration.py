@@ -158,7 +158,7 @@ try:
                     print("3D camera frame:", grasp_point_3d)
 
                 # 建构齐次坐标
-                grasp_point_homogeneous = np.array([grasp_point_3d[2], grasp_point_3d[0], grasp_point_3d[1], 1])
+                grasp_point_homogeneous = np.array([grasp_point_3d[0], grasp_point_3d[1], grasp_point_3d[2], 1])
                 # # 齐次坐标与外参矩阵相乘，以获取在机械臂坐标系下的坐标
                 # TS_eye2base = np.load(TS_hand_eye_file)
                 # TS_eye2base = TS_eye2base['arr_0']
@@ -173,7 +173,7 @@ try:
                 grasp_point_robot = TS_eye2base @ grasp_point_homogeneous
                 # 机械臂坐标系下的抓取点
                 # grasp_point_robot_3d = grasp_point_robot[:3] 
-                grasp_point_robot_3d = [grasp_point_robot[0]-100, grasp_point_robot[2]-300, grasp_point_robot[1]+300]
+                grasp_point_robot_3d = [grasp_point_robot[0]-70, grasp_point_robot[1], grasp_point_robot[2]-150]
                 print("3D arm base frame:", grasp_point_robot_3d)
                 # print(object_depth_image)
                 to_save = {\
@@ -191,6 +191,7 @@ try:
             stop_flag = False
             if True:
                 action = ma.ActionSequence()
+                print("!!!!!!!!!!!!!!!!!!!!!!!")
                 print(action.Get_position())
                 print(grasp_point_robot_3d)
                 #action.Go_to_home_position()
@@ -205,6 +206,7 @@ try:
                 action.shake(2)
                 action.dump(100,1)
                 #action.put_back()
+
                 action.Execute()
             save_log.Save(to_save)
 
