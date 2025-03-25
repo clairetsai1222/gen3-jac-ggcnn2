@@ -92,6 +92,8 @@ def get_Ts_hand_in_base(file):
         # R_hand_in_base= eulerAnglesToRotationMatrix(np.array(Ts[3:]))
         R_hand_in_base= R.from_euler('xyz',np.array(Ts[3:]),degrees=True).as_matrix()
         T_hand_in_base = Ts[:3]
+        if T_hand_in_base[0] <2:
+            T_hand_in_base = [x * 1000 for x in T_hand_in_base]
 
         print("R_hand_in_base:\n",R_hand_in_base)
         print("T_hand_in_base:\n",T_hand_in_base)
@@ -144,7 +146,7 @@ def calibrate(path):
         print(img_name + " / " + file_name)
         board_in_camera = get_Ts_board_in_camera(img_name)
         hand_in_base = get_Ts_hand_in_base(file_name)
-        # print(f"board_in_camera:\n{board_in_camera}\nhand_in_base:\n{hand_in_base}")
+        print(f"board_in_camera:\n{board_in_camera}\nhand_in_base:\n{hand_in_base}")
         if not isinstance(board_in_camera, np.ndarray) or not isinstance(hand_in_base, np.ndarray):
             print("image!{} abandoned!".format(img_name))
             continue
@@ -168,7 +170,7 @@ if __name__ == '__main__':
     #图片所在路径
     path = f'./debug_calibration/'
     path2 = path
-    path2 = f'./ex_aruco_calibration0926/'
+    path2 = f'./ex_aruco_calibration0315/'
     # num = input("saving numbers...\n")
     # batch_save_img_and_base_pose(int(num), path=path)
     R_camera_to_base,T_camera_to_base = calibrate(path2)
