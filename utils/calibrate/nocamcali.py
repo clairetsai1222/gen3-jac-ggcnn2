@@ -11,8 +11,8 @@ from scipy.spatial.transform import Rotation as R
 # import gen3_gripper_pose 
 
 #设置标定板尺寸信息 单位（mm）
-grid_size = 26.8
-offset = 2.7
+grid_size = 25.5
+offset = 2.4
 
 # 设置相机参数
 
@@ -168,12 +168,10 @@ def get_all_files(path, extension="*.png"):
 
 if __name__ == '__main__':
     #图片所在路径
-    path = f'./debug_calibration/'
-    path2 = path
-    path2 = f'./ex_aruco_calibration0315/'
+    path = f'./debug_calibration_test/'
     # num = input("saving numbers...\n")
     # batch_save_img_and_base_pose(int(num), path=path)
-    R_camera_to_base,T_camera_to_base = calibrate(path2)
+    R_camera_to_base,T_camera_to_base = calibrate(path)
     print(T_camera_to_base)
     Ts_camera_to_base = np.vstack((np.hstack((R_camera_to_base,T_camera_to_base)),np.array([0,0,0,1])))
     #存储标定结果矩阵
